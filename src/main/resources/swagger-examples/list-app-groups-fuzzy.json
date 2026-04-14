@@ -1,0 +1,9 @@
+{
+    "filters": {
+        "name": "Producton"
+    },
+    "fuzzy": true,
+    "fuzzyThreshold": 0.3,
+    "page": 0,
+    "size": 20
+}

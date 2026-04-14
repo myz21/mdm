@@ -1,0 +1,19 @@
+[
+    {
+        "appType": "VPP",
+        "trackId": "1108187098",
+        "bundleId": "com.microsoft.teams",
+        "displayName": "Microsoft Teams"
+    },
+    {
+        "appType": "VPP",
+        "trackId": "281796108",
+        "bundleId": "com.google.Gmail",
+        "displayName": "Gmail"
+    },
+    {
+        "appType": "ENTERPRISE",
+        "artifactRef": "com.arcyintel.internal-app",
+        "displayName": "ArcOps Internal App"
+    }
+]

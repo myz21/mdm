@@ -1,0 +1,148 @@
+host: ${APP_HOST:https://test.uconos.com/api/apple}
+
+arcops:
+  license:
+    file: config/license.dat
+
+server:
+  port: 8085
+  servlet:
+    context-path: /api/apple
+    application-display-name: apple-mdm
+
+spring:
+  config:
+    import: classpath:application-common.yaml
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  application:
+    name: apple-mdm
+  datasource:
+    url: jdbc:postgresql://localhost:5433/molsec_uconos?currentSchema=apple_mdm
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123456}
+    hikari:
+      schema: apple_mdm
+  jpa:
+    #show-sql: true
+    properties:
+      hibernate:
+        default_schema: apple_mdm
+  rabbitmq:
+    host: localhost
+    port: 5673
+    username: ${RABBITMQ_USERNAME:admin}
+    password: ${RABBITMQ_PASSWORD:admin}
+    listener:
+      simple:
+        missing-queues-fatal: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 60000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+  cloud:
+    consul:
+      discovery:
+        health-check-path: /api/apple/actuator/health
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,logfile
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  file:
+    name: logs/apple-mdm.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-}] [${spring.application.name}:${spring.cloud.client.ip-address:localhost}:${server.port}] %-5level %logger{36} - %msg%n"
+#  level:
+#    org.springframework.cloud.gateway: info
+#    org.springframework.web: info
+#    org.springframework.security: info
+#    org.hibernate.SQL: info
+#    org.hibernate.orm.jdbc.bind: info
+#    org.springframework.jdbc.core.JdbcTemplate: info
+#    org.springframework.jdbc.core.StatementCreatorUtils: info
+
+mdm:
+  organization:
+    name: ${ORGANIZATION_NAME:Arcyintel}
+  email:
+    from: ${EMAIL_FROM:noreply@arcyintel.com}
+    enrollment-subject: ${EMAIL_ENROLLMENT_SUBJECT:Device Enrollment Required}
+  enrollment:
+    account-driven:
+      default-auth-method: simple
+      simple:
+        realm: "ArcOps MDM"
+      oauth2:
+        redirect-url: "apple-remotemanagement-user-login:/oauth2/redirection"
+        cache-ttl-seconds: 300
+  enroll:
+    paths:
+      identityB64: file:certs/apple/identity_3des.b64
+  cert:
+    subject:
+      country: TR
+      state: TurkeyState
+      locality: Istanbul
+      organization: Arcyintel
+      organizationalUnit: IT
+      commonName: ${CERT_CN:arcyintel.com}
+      email: dev@arcyintel.com
+    paths:
+      directory: certs/apple
+      pushCert: file:certs/apple/MDM_Certificate.pem
+      vendorKey: file:certs/apple/vendor_key.pem
+      mdmPem: file:certs/apple/mdm.pem
+      appleWWDRCAG3: file:certs/apple/AppleWWDRCAG3.cer
+      appleIncRootCertificate: file:certs/apple/AppleIncRootCertificate.cer
+      caKey: file:certs/apple/cakey.key
+      caCert: file:certs/apple/cacert.crt
+    p12-password: ${MDM_P12_PASSWORD:123456}
+
+webrtc:
+  turn-url: ${TURN_URL:turn:dev.uconos.com:3478}
+  turn-username: ${TURN_USERNAME:arcops}
+  turn-credential: ${TURN_CREDENTIAL:}
+
+apple:
+  command:
+    queue:
+      type: ${COMMAND_QUEUE_TYPE:redis}
+
+apns:
+  agent:
+    key-id: ${APNS_AGENT_KEY_ID:U323WD6MV8}
+    team-id: ${APNS_AGENT_TEAM_ID:8RQ8945R66}
+    key-path: ${APNS_AGENT_KEY_PATH:certs/apple/AuthKey_U323WD6MV8.p8}
+    production: ${APNS_AGENT_PRODUCTION:false}
+
+mqtt:
+  broker-url: ${MQTT_BROKER_URL:tcp://localhost:1883}
+  agent-broker-url: ${MQTT_AGENT_BROKER_URL:wss://test.uconos.com/mqtt}
+  client-id: ${MQTT_CLIENT_ID:arcops-apple-mdm-server}
+  username: ${MQTT_USERNAME:}
+  password: ${MQTT_PASSWORD:}
+  default-qos: 1
+
+services:
+  back-core:
+    url: http://localhost:8086/api/back-core

@@ -1,0 +1,1 @@
+ALTER TABLE agent_command ADD COLUMN IF NOT EXISTS created_by VARCHAR(255);

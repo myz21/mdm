@@ -1,0 +1,2 @@
+ALTER TABLE abm_device
+    ADD COLUMN abm_status VARCHAR(30) DEFAULT 'ACTIVE';

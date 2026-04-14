@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Device Enrollment — ArcOps</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --bg:#f5f5f7;
+            --card:#fff;
+            --fg:#1d1d1f;
+            --muted:#86868b;
+            --ring:#d2d2d7;
+            --accent:#0071e3;
+            --accent-hover:#0077ed;
+            --error:#ff3b30;
+            --success:#34c759;
+            --shadow:0 4px 24px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+        }
+        @media(prefers-color-scheme:dark){
+            :root{
+                --bg:#000;
+                --card:#1c1c1e;
+                --fg:#f5f5f7;
+                --muted:#98989d;
+                --ring:#38383a;
+                --shadow:0 4px 24px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.2);
+            }
+        }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;
+            background:var(--bg);
+            color:var(--fg);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height:100vh;
+            padding:24px;
+            -webkit-font-smoothing:antialiased;
+        }
+        .card{
+            background:var(--card);
+            border-radius:20px;
+            padding:48px 40px 40px;
+            max-width:380px;
+            width:100%;
+            box-shadow:var(--shadow);
+        }
+        .logo{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:10px;
+            margin-bottom:32px;
+        }
+        .logo-icon{
+            width:40px;height:40px;
+            border-radius:10px;
+            background:linear-gradient(135deg,var(--accent),#00c7be);
+            display:flex;align-items:center;justify-content:center;
+        }
+        .logo-icon svg{width:22px;height:22px;fill:#fff}
+        .logo-text{
+            font-size:22px;font-weight:700;letter-spacing:-.02em;
+            color:var(--fg);
+        }
+        h1{
+            font-size:26px;font-weight:700;letter-spacing:-.02em;
+            text-align:center;margin-bottom:6px;
+        }
+        .subtitle{
+            color:var(--muted);text-align:center;
+            font-size:15px;line-height:1.4;margin-bottom:32px;
+        }
+        .field{margin-bottom:20px}
+        .field label{
+            display:block;font-size:13px;font-weight:600;
+            color:var(--muted);margin-bottom:6px;
+            text-transform:uppercase;letter-spacing:.04em;
+        }
+        .field input{
+            width:100%;padding:12px 14px;
+            background:var(--bg);border:1.5px solid var(--ring);
+            border-radius:12px;font-size:17px;color:var(--fg);
+            outline:none;transition:border-color .2s,box-shadow .2s;
+            -webkit-appearance:none;
+        }
+        .field input:focus{
+            border-color:var(--accent);
+            box-shadow:0 0 0 3px rgba(0,113,227,.15);
+        }
+        .field input::placeholder{color:var(--muted);opacity:.6}
+        .btn{
+            width:100%;padding:14px;margin-top:8px;
+            background:var(--accent);color:#fff;border:none;
+            border-radius:12px;font-size:17px;font-weight:600;
+            cursor:pointer;transition:background .15s,transform .1s;
+            -webkit-appearance:none;
+        }
+        .btn:hover{background:var(--accent-hover)}
+        .btn:active{transform:scale(.98)}
+        .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+        .btn-secondary{
+            width:100%;padding:13px 14px;margin-top:10px;
+            display:flex;align-items:center;justify-content:center;gap:10px;
+            background:var(--bg);color:var(--fg);
+            border:1.5px solid var(--ring);border-radius:12px;
+            font-size:16px;font-weight:600;cursor:pointer;
+            transition:background .15s,border-color .15s,transform .1s;
+        }
+        .btn-secondary:hover{border-color:var(--muted);background:var(--ring)}
+        .btn-secondary:active{transform:scale(.98)}
+        .btn-secondary svg{width:20px;height:20px;flex-shrink:0}
+        .btn-back{
+            display:inline-flex;align-items:center;gap:4px;
+            background:none;border:none;color:var(--accent);
+            font-size:14px;font-weight:500;cursor:pointer;
+            padding:0;margin-bottom:20px;
+        }
+        .btn-back:hover{text-decoration:underline}
+        .divider-with-text{
+            display:flex;align-items:center;gap:12px;
+            margin:24px 0 4px;
+        }
+        .divider-with-text::before,.divider-with-text::after{
+            content:'';flex:1;height:1px;background:var(--ring);opacity:.5;
+        }
+        .divider-with-text span{
+            font-size:13px;color:var(--muted);font-weight:500;
+            text-transform:uppercase;letter-spacing:.04em;
+        }
+        .error-msg{
+            color:var(--error);text-align:center;
+            margin-top:16px;font-size:14px;font-weight:500;
+            display:none;
+            animation:shake .4s ease;
+        }
+        .error-msg.visible{display:block}
+        .success-msg{
+            color:var(--success);text-align:center;
+            margin-top:12px;font-size:14px;font-weight:500;
+            display:none;
+        }
+        .success-msg.visible{display:block}
+        .spinner{
+            display:none;width:20px;height:20px;
+            border:2.5px solid rgba(255,255,255,.3);
+            border-top-color:#fff;border-radius:50%;
+            animation:spin .6s linear infinite;
+            margin:0 auto;
+        }
+        .spinner-dark{
+            border-color:rgba(0,0,0,.15);
+            border-top-color:var(--fg);
+        }
+        .footer{
+            margin-top:28px;text-align:center;
+            font-size:12px;color:var(--muted);line-height:1.4;
+        }
+        .divider{
+            height:1px;background:var(--ring);
+            margin:24px 0;opacity:.5;
+        }
+        .hidden{display:none!important}
+        .consent-box{
+            background:var(--bg);border-radius:12px;
+            padding:16px;margin-bottom:20px;
+            max-height:200px;overflow-y:auto;
+            -webkit-overflow-scrolling:touch;
+        }
+        .consent-box h3{
+            font-size:14px;font-weight:600;margin-bottom:8px;
+            color:var(--fg);
+        }
+        .consent-box p{
+            font-size:13px;line-height:1.55;color:var(--muted);
+            margin-bottom:10px;
+        }
+        .consent-box p:last-child{margin-bottom:0}
+        .consent-box ul{
+            font-size:13px;line-height:1.55;color:var(--muted);
+            margin:0 0 10px 18px;padding:0;
+        }
+        .consent-box ul li{margin-bottom:4px}
+        .otp-input{
+            text-align:center;font-size:24px;letter-spacing:8px;font-weight:600;
+        }
+        @keyframes shake{
+            0%,100%{transform:translateX(0)}
+            20%,60%{transform:translateX(-6px)}
+            40%,80%{transform:translateX(6px)}
+        }
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:420px){
+            .card{padding:36px 24px 28px;border-radius:16px}
+            h1{font-size:22px}
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            </div>
+            <span class="logo-text">ArcOps</span>
+        </div>
+        <h1>Device Enrollment</h1>
+        <p class="subtitle" id="subtitleText">Please review and accept before continuing.</p>
+
+        <!-- Step 0: Consent -->
+        <div id="consentView">
+            <div class="consent-box">
+                <h3>Remote Management</h3>
+                <p>By continuing, you agree to allow your organization to remotely manage this device. This may include the ability to:</p>
+                <ul>
+                    <li>Install and manage apps and accounts</li>
+                    <li>Configure Wi-Fi, VPN, and email settings</li>
+                    <li>Enforce security policies and restrictions</li>
+                    <li>Remotely lock or erase this device if needed</li>
+                    <li>View device information such as name, model, and serial number</li>
+                </ul>
+                <p>Your personal data, photos, and messages will not be accessed by your organization. This enrollment is required to use this device for work purposes.</p>
+            </div>
+            <button type="button" class="btn" onclick="acceptConsent()">I Accept &amp; Continue</button>
+        </div>
+
+        <!-- Step 1: Password Login -->
+        <div id="passwordView" class="hidden">
+            <form id="loginForm" method="POST" action="web-auth" onsubmit="return handleSubmit()">
+                <input type="hidden" name="mode" id="loginMode">
+                <input type="hidden" name="user-identifier" id="loginUserIdentifier">
+                <div class="field">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="username" autocapitalize="none" autocorrect="off">
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn" id="submitBtn">
+                    <span id="btnText">Sign In &amp; Enroll</span>
+                    <div class="spinner" id="btnSpinner"></div>
+                </button>
+                <div class="error-msg" id="errorMsg">Authentication failed. Please check your credentials.</div>
+            </form>
+
+            <!-- OTP button with provider icons — shown if providers are configured -->
+            <div id="otpSection" class="hidden">
+                <div class="divider-with-text"><span>or</span></div>
+                <button type="button" class="btn-secondary" onclick="showEmailStep()" id="otpBtn">
+                    <span id="providerIcons" style="display:inline-flex;gap:6px;align-items:center;"></span>
+                    <span>Sign in with Email Code</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Email input -->
+        <div id="emailView" class="hidden">
+            <button type="button" class="btn-back" onclick="showPasswordView()">&#8592; Back</button>
+            <div class="field">
+                <label for="otpEmail">Email Address</label>
+                <input type="email" id="otpEmail" placeholder="Enter your work email" autocomplete="email" autocapitalize="none">
+            </div>
+            <button type="button" class="btn" id="sendCodeBtn" onclick="sendOtp()">
+                <span id="sendCodeText">Send Verification Code</span>
+                <div class="spinner" id="sendCodeSpinner"></div>
+            </button>
+            <div class="error-msg" id="emailError"></div>
+        </div>
+
+        <!-- Step 3: OTP verification -->
+        <div id="otpView" class="hidden">
+            <button type="button" class="btn-back" onclick="showEmailStep()">&#8592; Back</button>
+            <p style="text-align:center;color:var(--muted);font-size:14px;margin-bottom:20px;">
+                A verification code has been sent to<br><strong id="sentToEmail" style="color:var(--fg)"></strong>
+            </p>
+            <form id="otpForm" method="POST" action="web-auth/otp/verify" onsubmit="return handleOtpSubmit()">
+                <input type="hidden" name="mode" id="otpMode">
+                <input type="hidden" name="user-identifier" id="otpUserIdentifier">
+                <input type="hidden" id="otpEmailHidden" name="email">
+                <div class="field">
+                    <label for="otpCode">Verification Code</label>
+                    <input type="text" id="otpCode" name="otp" class="otp-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" required autocomplete="one-time-code">
+                </div>
+                <button type="submit" class="btn" id="verifyBtn">
+                    <span id="verifyText">Verify &amp; Enroll</span>
+                    <div class="spinner" id="verifySpinner"></div>
+                </button>
+                <div class="error-msg" id="otpError"></div>
+            </form>
+            <button type="button" style="display:block;margin:16px auto 0;background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;" onclick="resendOtp()">
+                Resend code
+            </button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="footer">
+            Your device will be managed by your organization after enrollment.
+        </div>
+    </div>
+    <script>
+        var authMode = /*AUTH_MODE*/'';
+        var otpEnabled = /*OTP_ENABLED*/false;
+        var providerTypes = /*PROVIDER_TYPES*/[];
+        var userIdentifier = /*USER_IDENTIFIER*/'';
+
+        var providerIcons = {
+            'GOOGLE_WORKSPACE': '<svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>',
+            'AZURE_ENTRA': '<svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="#F25022" d="M1 1h10v10H1z"/><path fill="#7FBA00" d="M13 1h10v10H13z"/><path fill="#00A4EF" d="M1 13h10v10H1z"/><path fill="#FFB900" d="M13 13h10v10H13z"/></svg>'
+        };
+
+        // Set mode and user-identifier on hidden form fields
+        if(authMode){
+            document.getElementById('loginMode').value=authMode;
+            document.getElementById('otpMode').value=authMode;
+        }
+        if(userIdentifier){
+            document.getElementById('loginUserIdentifier').value=userIdentifier;
+            document.getElementById('otpUserIdentifier').value=userIdentifier;
+            // BYOD: pre-fill and lock username to the enrollment initiator
+            var enrollUsername = userIdentifier.indexOf('@')>0 ? userIdentifier.substring(0,userIdentifier.indexOf('@')) : userIdentifier;
+            var usernameField = document.getElementById('username');
+            usernameField.value = enrollUsername;
+            usernameField.readOnly = true;
+            usernameField.style.opacity = '0.7';
+            usernameField.style.cursor = 'not-allowed';
+            // Pre-fill OTP email with username part (user can add domain)
+            document.getElementById('otpEmail').placeholder = enrollUsername + '@...';
+        }
+
+        // Render provider icons in the OTP button
+        if(providerTypes.length > 0){
+            var iconsHtml = '';
+            for(var i=0;i<providerTypes.length;i++){
+                if(providerIcons[providerTypes[i]]){
+                    iconsHtml += providerIcons[providerTypes[i]];
+                }
+            }
+            document.getElementById('providerIcons').innerHTML = iconsHtml;
+        }
+
+        function acceptConsent(){
+            document.getElementById('consentView').classList.add('hidden');
+            document.getElementById('passwordView').classList.remove('hidden');
+            document.getElementById('subtitleText').textContent='Sign in to enroll this device with your organization.';
+            if(otpEnabled){
+                document.getElementById('otpSection').classList.remove('hidden');
+            }
+        }
+
+        function handleSubmit(){
+            var btn=document.getElementById('submitBtn');
+            var txt=document.getElementById('btnText');
+            var sp=document.getElementById('btnSpinner');
+            btn.disabled=true;txt.style.display='none';sp.style.display='block';
+            return true;
+        }
+
+        function showPasswordView(){
+            document.getElementById('consentView').classList.add('hidden');
+            document.getElementById('passwordView').classList.remove('hidden');
+            document.getElementById('emailView').classList.add('hidden');
+            document.getElementById('otpView').classList.add('hidden');
+        }
+
+        function showEmailStep(){
+            document.getElementById('passwordView').classList.add('hidden');
+            document.getElementById('emailView').classList.remove('hidden');
+            document.getElementById('otpView').classList.add('hidden');
+            document.getElementById('emailError').classList.remove('visible');
+            document.getElementById('otpEmail').focus();
+        }
+
+        function showOtpStep(email){
+            document.getElementById('passwordView').classList.add('hidden');
+            document.getElementById('emailView').classList.add('hidden');
+            document.getElementById('otpView').classList.remove('hidden');
+            document.getElementById('sentToEmail').textContent=email;
+            document.getElementById('otpEmailHidden').value=email;
+            document.getElementById('otpError').classList.remove('visible');
+            document.getElementById('otpCode').value='';
+            document.getElementById('otpCode').focus();
+        }
+
+        function sendOtp(){
+            var email=document.getElementById('otpEmail').value.trim();
+            if(!email){
+                showError('emailError','Please enter your email address.');
+                return;
+            }
+            // BYOD: client-side username check before sending
+            if(userIdentifier){
+                var expectedUser = userIdentifier.indexOf('@')>0 ? userIdentifier.substring(0,userIdentifier.indexOf('@')).toLowerCase() : userIdentifier.toLowerCase();
+                var submittedUser = email.indexOf('@')>0 ? email.substring(0,email.indexOf('@')).toLowerCase() : email.toLowerCase();
+                if(expectedUser !== submittedUser){
+                    showError('emailError','You must use the account you started enrollment with ('+expectedUser+'@...).');
+                    return;
+                }
+            }
+            var btn=document.getElementById('sendCodeBtn');
+            var txt=document.getElementById('sendCodeText');
+            var sp=document.getElementById('sendCodeSpinner');
+            btn.disabled=true;txt.style.display='none';sp.style.display='block';
+            document.getElementById('emailError').classList.remove('visible');
+
+            var xhr=new XMLHttpRequest();
+            xhr.open('POST','web-auth/otp/send',true);
+            xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+            xhr.onload=function(){
+                btn.disabled=false;txt.style.display='inline';sp.style.display='none';
+                if(xhr.status===200){
+                    showOtpStep(email);
+                } else {
+                    try{
+                        var resp=JSON.parse(xhr.responseText);
+                        showError('emailError',resp.message||'No matching account found.');
+                    }catch(e){
+                        showError('emailError','No matching account found.');
+                    }
+                }
+            };
+            xhr.onerror=function(){
+                btn.disabled=false;txt.style.display='inline';sp.style.display='none';
+                showError('emailError','Connection error. Please try again.');
+            };
+            var params='email='+encodeURIComponent(email);
+            if(userIdentifier) params+='&user-identifier='+encodeURIComponent(userIdentifier);
+            xhr.send(params);
+        }
+
+        function handleOtpSubmit(){
+            var btn=document.getElementById('verifyBtn');
+            var txt=document.getElementById('verifyText');
+            var sp=document.getElementById('verifySpinner');
+            btn.disabled=true;txt.style.display='none';sp.style.display='block';
+            return true;
+        }
+
+        function resendOtp(){
+            var email=document.getElementById('otpEmailHidden').value;
+            document.getElementById('otpEmail').value=email;
+            showEmailStep();
+            sendOtp();
+        }
+
+        function showError(id,msg){
+            var el=document.getElementById(id);
+            el.textContent=msg;
+            el.classList.add('visible');
+        }
+    </script>
+</body>
+</html>

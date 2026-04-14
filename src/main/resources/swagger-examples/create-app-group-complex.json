@@ -1,0 +1,28 @@
+{
+    "name": "Corporate App Suite",
+    "description": "Full corporate application suite with VPP and enterprise apps",
+    "metadata": {
+        "department": "Engineering",
+        "costCenter": "IT-001",
+        "autoAssign": true
+    },
+    "items": [
+        {
+            "appType": "VPP",
+            "trackId": "1108187098",
+            "bundleId": "com.microsoft.teams",
+            "displayName": "Microsoft Teams"
+        },
+        {
+            "appType": "VPP",
+            "trackId": "281796108",
+            "bundleId": "com.google.Gmail",
+            "displayName": "Gmail"
+        },
+        {
+            "appType": "ENTERPRISE",
+            "artifactRef": "com.arcyintel.internal-app",
+            "displayName": "ArcOps Internal App"
+        }
+    ]
+}

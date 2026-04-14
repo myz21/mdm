@@ -1,0 +1,11 @@
+{
+    "filters": {
+        "platform": "MacOS",
+        "trackName": "Pages"
+    },
+    "fields": ["id", "trackId", "trackName", "bundleId", "version", "artworkUrl100", "supportedPlatforms"],
+    "fuzzy": true,
+    "fuzzyThreshold": 0.3,
+    "page": 0,
+    "size": 20
+}

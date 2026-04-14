@@ -1,0 +1,40 @@
+{
+    "name": "Corporate App Suite v2",
+    "description": "Updated corporate application suite",
+    "metadata": {
+        "department": "Engineering",
+        "costCenter": "IT-002",
+        "autoAssign": true,
+        "version": 2
+    },
+    "items": [
+        {
+            "appType": "VPP",
+            "trackId": "1108187098",
+            "bundleId": "com.microsoft.teams",
+            "displayName": "Microsoft Teams"
+        },
+        {
+            "appType": "VPP",
+            "trackId": "281796108",
+            "bundleId": "com.google.Gmail",
+            "displayName": "Gmail"
+        },
+        {
+            "appType": "VPP",
+            "trackId": "585027354",
+            "bundleId": "com.google.ios.youtube",
+            "displayName": "YouTube"
+        },
+        {
+            "appType": "ENTERPRISE",
+            "artifactRef": "com.arcyintel.internal-app",
+            "displayName": "ArcOps Internal App"
+        },
+        {
+            "appType": "ENTERPRISE",
+            "artifactRef": "com.arcyintel.vpn-client",
+            "displayName": "ArcOps VPN Client"
+        }
+    ]
+}

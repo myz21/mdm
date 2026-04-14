@@ -1,0 +1,8 @@
+{
+    "profileName": "Default MDM Profile",
+    "url": "https://test.uconos.com/api/apple/mdm/enrollment",
+    "isSupervised": true,
+    "isMandatory": true,
+    "isMDMRemovable": false,
+    "department": "IT"
+}

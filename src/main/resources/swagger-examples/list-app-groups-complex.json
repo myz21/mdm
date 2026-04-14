@@ -1,0 +1,8 @@
+{
+    "filters": {
+        "name": "Production Apps"
+    },
+    "fields": ["id", "name", "description", "items"],
+    "page": 0,
+    "size": 20
+}

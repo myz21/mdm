@@ -1,0 +1,9 @@
+{
+    "filters": {
+        "username": "john",
+        "status": "ACTIVE"
+    },
+    "fields": ["id", "username", "email", "fullName", "status"],
+    "page": 0,
+    "size": 20
+}

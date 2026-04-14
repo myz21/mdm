@@ -1,0 +1,14 @@
+[
+    {
+        "serialNumber": "C39V1234ABCD",
+        "adamIds": ["1108187098", "281796108", "585027354"]
+    },
+    {
+        "serialNumber": "DLXQ5678EFGH",
+        "adamIds": ["1108187098", "281796108"]
+    },
+    {
+        "serialNumber": "F17R9012IJKL",
+        "adamIds": ["1108187098"]
+    }
+]

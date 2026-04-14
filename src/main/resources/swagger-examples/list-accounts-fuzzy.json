@@ -1,0 +1,10 @@
+{
+    "filters": {
+        "username": "jonh"
+    },
+    "fields": ["id", "username", "email", "fullName", "status"],
+    "fuzzy": true,
+    "fuzzyThreshold": 0.3,
+    "page": 0,
+    "size": 20
+}

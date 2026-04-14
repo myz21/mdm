@@ -1,0 +1,36 @@
+{
+    "profileName": "Corporate Supervised Profile",
+    "url": "https://test.uconos.com/api/apple/mdm/enrollment",
+    "allowPairing": false,
+    "isSupervised": true,
+    "isMultiUser": false,
+    "isMandatory": true,
+    "awaitDeviceConfigured": true,
+    "isMDMRemovable": false,
+    "supportPhoneNumber": "+90-555-123-4567",
+    "supportEmailAddress": "mdm-support@arcyintel.com",
+    "autoAdvanceSetup": true,
+    "department": "Engineering",
+    "language": "tr",
+    "region": "TR",
+    "configurationWebURL": "https://test.uconos.com/setup",
+    "skipSetupItems": [
+        "AppleID",
+        "Passcode",
+        "Location",
+        "Restore",
+        "Android",
+        "TOS",
+        "Siri",
+        "Diagnostics",
+        "Biometric",
+        "Payment",
+        "ScreenTime",
+        "SoftwareUpdate",
+        "iMessageAndFaceTime"
+    ],
+    "devices": [
+        "C39V1234ABCD",
+        "DLXQ5678EFGH"
+    ]
+}
