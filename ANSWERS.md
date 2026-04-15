@@ -103,6 +103,30 @@ Set<TypedTuple<Object>> items = redisTemplate.opsForZSet()
     .rangeWithScores(queueKey, 0, 0);  // score'u en düşük olanı al (yüksek öncelik)
 ```
 
+## Gerçek hayat senaryosu: “Bluetooth ile kilit açan akıllı kapı / araç kilidi”
+Bir çalışan ofise/arabaya erişemiyor; telefon üzerinden şu komutları uzaktan tetikliyorsunuz:
+
+1) **Bluetooth’u aç** (ön koşul)  
+2) **Yakındaki Bluetooth kilidine/arabaya bağlan**  
+3) **Kilidi aç (unlock) / aracı aç**  
+
+### Stack (LIFO) ile sorun nasıl çıkar?
+Komutları sırayla gönderdiğinizi düşünelim (1→2→3). Eğer kuyruk **stack (LIFO)** ise en son gelen **“kilidi aç”** komutu ilk çalışır.
+
+- Telefonun Bluetooth’u kapalıysa “kilidi aç” komutu **hemen başarısız** olur (çünkü bağlantı yok).
+- Sonra “bağlan” denenir, o da Bluetooth kapalı olduğu için **başarısız** olur.
+- En sonda Bluetooth açılır; ama kritik komutlar zaten **kaçırılmış/başarısız** olmuştur.
+
+Bu, “sıra bozulduğu için politika/iş akışı yanlış uygulanır” dediğiniz duruma birebir örnek.
+
+### Priority Queue ile çözüm
+Komutlara öncelik verirsiniz:
+- **Bluetooth’u aç** → en yüksek öncelik (ör. 100)
+- **Bağlan** → orta (ör. 50)
+- **Kilidi aç** → daha düşük (ör. 10)
+
+Böylece kuyruğa hangi sırayla düşerse düşsün, sistem önce **Bluetooth’u açar**, sonra **bağlanır**, en son **kilidi açar**.
+
 ---
 
 ### a2) Belleğe mi yoksa harici yerde mi tutulmalı? Sunucu restart durumu?
