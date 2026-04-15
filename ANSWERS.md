@@ -1037,12 +1037,6 @@ redisTemplate.opsForList().rightPush(queueKey, serializeQueueItem(item));
 applePushService.sendMdmWakeUp(device.getToken(), device.getPushMagic());
 ```
 
-#### Alternatif ve Değişiklik:
-
-**Event Sourcing / Message Queue (Kafka/RabbitMQ):**
-- Daha modern ve asenkron yaklaşım
-- Dosya: [RedisAppleCommandQueueServiceImpl.java](src/main/java/com/arcyintel/arcops/apple_mdm/services/apple/command/RedisAppleCommandQueueServiceImpl.java#L435-L445)
-
 ```java
 // Mevcut (Dual-write: senkron DB + Redis):
 appleCommandRepository.save(appleCommand);  // DB WRITE
