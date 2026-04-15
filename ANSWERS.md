@@ -2,7 +2,8 @@
 
 Sorular aşağıdadır ama öncelikle mevcut adımların kodu yapısını inceledim ve yorumum aşağıdadır.
 
-```
+--- 
+
 İlk önce 1. ve 2. adımı okuduktan sonra burada bir API isteği olduğunu fark ettim. Sonra CONTEXT.md'de, cihazı kilitle yazıdınız için "lock" keyword'ünü arattım. Ve aşağıdaki endpoint'i buldum:
 
 ```
@@ -50,7 +51,9 @@ Kuyruktan alınan komut `executeCommandAsync` ile çalıştırılır. Ayrıca bu
 Burada Acknowledged, Error veya NotNow şeklinde cevabı döndüğünü görüyorum.
 
 Daha sonra kuyruk ve inflight temizliği, sonraki komuta geçme, db durumu güncelleme gibi şeyler yapılır. 
-```
+
+
+---
 
 
 ## a) Veri Yapısı Seçimi
