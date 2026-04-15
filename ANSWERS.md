@@ -2,55 +2,71 @@
 
 Sorular aşağıdadır ama öncelikle mevcut adımların kodu yapısını inceledim ve yorumum aşağıdadır.
 
---- 
+---
 
-İlk önce 1. ve 2. adımı okuduktan sonra burada bir API isteği olduğunu fark ettim. Sonra CONTEXT.md'de, cihazı kilitle yazıdınız için "lock" keyword'ünü arattım. Ve aşağıdaki endpoint'i buldum:
+1. ve 2. adımı okuduktan sonra burada bir API isteği olduğunu fark ettim. Ardından `CONTEXT.md` içinde “cihazı kilitle” ifadesinden yola çıkarak **`lock`** keyword’ünü arattım ve aşağıdaki endpoint’i buldum:
 
+```text
+/devices/{udid}/commands/lock
 ```
-/devices/{udid}/commands/lock	
-```
 
-Daha sonra `commands/lock`'u codebase üzerinde aradım. Aşağıdaki koda ulaştım:
+Daha sonra codebase üzerinde `commands/lock` araması yaptım ve şu koda ulaştım:
 
 ```java
-    @Operation(summary = "Send DeviceLock Command")
-    @PostMapping("/{udid}/commands/lock")
-    public ResponseEntity<Map<String, Object>> lockDevice(@PathVariable String udid,
-                             @RequestParam(required = false) String message,
-                             @RequestParam(required = false) String phoneNumber) throws Exception {
-        appleCommandSenderService.lockDevice(udid, message, phoneNumber);
-        return ResponseEntity.ok(commandResponse("DeviceLock", udid));
-    }
+@Operation(summary = "Send DeviceLock Command")
+@PostMapping("/{udid}/commands/lock")
+public ResponseEntity<Map<String, Object>> lockDevice(@PathVariable String udid,
+                         @RequestParam(required = false) String message,
+                         @RequestParam(required = false) String phoneNumber) throws Exception {
+    appleCommandSenderService.lockDevice(udid, message, phoneNumber);
+    return ResponseEntity.ok(commandResponse("DeviceLock", udid));
+}
 ```
 
-Bu methoddan ilk anladığım, bunun mesaj ve telefon numarası alabileceği idi. Cihazı kiltleyen iç method yani lockDevice id, message, phoneNumber parametrelerini almakta. Bunlar da id request header üzerinden, telefon numarası ve mesaj da request body üzerinden gelmektedir. Dönüş olarak DeviceLock mesajı ile birlikte udid dönmektedir.
+Bu methoddan anladığım kadarıyla endpoint; opsiyonel olarak **`message`** ve **`phoneNumber`** parametrelerini alabiliyor. Controller içinden çağrılan asıl iş mantığı `appleCommandSenderService.lockDevice(udid, message, phoneNumber)` methodunda yer alıyor. Response olarak da `DeviceLock` komut adı ile birlikte ilgili `udid` dönülüyor.
 
-AppleCommandService'in altındaki LockDevice'a gittim. Sonra appleDeviceRepository'deki findByUdid methodu cihazın id'sini alarak veri tabanına sorgu atmaktadır. Eğer ki sorgu sonucu boş ise böyle bir id sistemimizde kayıtlı değil demektir. Ve kilitleme işleminin iptal olduğuna dair log basılır. 
+Ardından `AppleCommandSenderService` altındaki `lockDevice` implementasyonuna gittim. Burada ilk olarak `appleDeviceRepository.findByUdid(...)` ile cihazın sistemde kayıtlı olup olmadığı kontrol ediliyor. Eğer sorgu sonucu boş dönerse, bu `udid` sistemde kayıtlı değil demektir ve kilitleme işlemi iptal edilerek log basılıyor.
 
-Daha sonra cihazın id'si alınarak cihazı kilitlemeyi temsil eden random bir id createCommandUUID ile üretilir.
+Cihaz doğrulandıktan sonra, kilitleme komutunu temsil eden rastgele bir komut ID’si `createCommandUUID` ile üretiliyor.
 
-Daha sonra bu komutun id'si, cihazın id'si, komutun template'i ve kilitleme komutu appleCommandQueueService'e (kuyruk) push edilir.
+Sonrasında;
+- komutun ID’si,
+- cihazın ID’si,
+- komut template’i,
+- ve kilitleme komutu
 
-Bu push'un bir interface'e bağlı olduğunu gördüm. Daha sonra pushCommand'ı codebase içerisinde incelediğimde RedisAppleCommandQueueServiceImpl'ya gittim. Daha sonra bunun üzerinde bir yorum satırı fark ettim.
+`appleCommandQueueService` üzerinden kuyruğa **push** ediliyor.
 
+Bu `push` işleminin bir interface’e bağlı olduğunu gördüm. `pushCommand` implementasyonunu takip edince `RedisAppleCommandQueueServiceImpl` sınıfına ulaştım. Burada şu yorum satırı özellikle dikkat çekiyor:
+
+```java
 // NOTE: pushCommand must NOT be @Async — callers push multiple commands sequentially
-    // and rely on FIFO ordering. Making this async breaks deterministic queue order.
+// and rely on FIFO ordering. Making this async breaks deterministic queue order.
+```
 
-Burada bu methodun asenkron olmaması gerektiğini çünkü asenkron olduğunda FIFO mantığının bozulabileceğinden dolayı böyle bir yorum satırı bırakıldığını anladım. 
+Buradan, `pushCommand` methodunun **asenkron olmaması gerektiği** sonucunu çıkardım; çünkü çağıran taraf birden fazla komutu ardışık şekilde push ediyor ve **FIFO sırasına** güveniyor. `@Async` yapılması durumunda deterministik sıra bozulabileceği için bu not bırakılmış.
 
-Bu methodda öncelikle komut depolama için bir XML'e dönüştürülüyor. Sonra komut database'e yazılıyor. Sonrasında redis kuyruğuna ekleniyor ama önce kuyruk boş mu diye bir kontrol ediliyor. Sonra eğer mevcutta herhangi bir komut kuyruk üzerinde koşmuyorsa ve kuyruğa ilk defa komut giriyorsa bu durumda device weak ediliyor. Eğer sendWakeUp FAIL olursa hata mesajı ID ile birlikte loglanıyor. Eğer ki başarılı şekilde pushlanıdysa ID ve komut IDsi loglanıyor. İlk üç adımı tamalamış oluyoruz.
+Bu methodda genel akış şu şekilde ilerliyor:
+1) Komut, depolama için önce XML formatına dönüştürülüyor.  
+2) Komut veritabanına yazılıyor.  
+3) Ardından Redis kuyruğuna ekleniyor; ancak bundan önce kuyruk boş mu diye kontrol ediliyor.  
+4) Eğer halihazırda kuyruk üzerinde çalışan bir komut yoksa ve ilk defa komut giriliyorsa cihaz “wake” ediliyor. `sendWakeUp` **FAIL** olursa komut ID’si ile birlikte hata loglanıyor. Başarılı olursa push işlemi ve ilgili ID/command ID bilgileri loglanıyor. Böylece ilk 3 adım tamamlanmış oluyor.
 
-Sonrasında cihaz WAKE komutunu aldı ve artık 4. adımdayız. Burada cihaz /mdm/connect'e bağlanır. Bununla alakalı dosya `/home/neo/Desktop/GITHUB MYZ21/apple_mdm/src/main/java/com/arcyintel/arcops/apple_mdm/services/apple/command/AppleCommandSenderServiceImpl.java`'te görülebilir. 
+Bu noktadan sonra cihaz WAKE komutunu almış oluyor ve 4. adıma geçiliyor: cihaz `/mdm/connect` endpoint’ine bağlanıyor. Bu akışla ilgili kodun `AppleCommandSenderServiceImpl.java` dosyasında görülebileceğini not ettim.
 
-Gerekli validasyonlardan sonra popCommand ile sonraki komut pop edilir.
+Gerekli validasyonlardan sonra `popCommand` ile sıradaki komut kuyruktan alınıyor.
 
-Daha sonra toXMLPropertyList methodu ile XML'e çevirme işlemi gerçekleştirilerek cihazın anlayacağı formata çevrilir. Buradaki pop command EXECUTING için incelendiğinde öncelikle cihazın başka bir instance tarafından o an herhangi bir komutu işleyip işlemediği kontrol edilir. Eğer işleniyorsa işlem pas geçilir. inFlight durumu için ayrıca bir yorum satırı bırakıldığını da gördüm: `// If this device already has an in-flight command, do NOT issue another one`.
+Ardından `toXMLPropertyList` ile komut, cihazın anlayacağı formata (XML property list) çevriliyor. `pop command` akışını incelerken şu kontrolü de gördüm: cihazın o anda başka bir instance tarafından komut işleyip işlemediği kontrol ediliyor. Eğer işliyorsa işlem pas geçiliyor. Ayrıca `inFlight` durumu için şu not düşülmüş:
 
-Kuyruktan alınan komut `executeCommandAsync` ile çalıştırılır. Ayrıca bu işlemin gerçekleştirilmesi bir zaman harcayacağından dolayı bir TTL cache kullanılmıştır. Cihaz komutu çalıştırıldıkta sonra sonucu döner.
+```text
+// If this device already has an in-flight command, do NOT issue another one
+```
 
-Burada Acknowledged, Error veya NotNow şeklinde cevabı döndüğünü görüyorum.
+Kuyruktan alınan komut `executeCommandAsync` ile çalıştırılıyor. Bu işlemin zaman alabileceği için TTL tabanlı bir cache mekanizması kullanılmış. Cihaz komutu çalıştırdıktan sonra sonucu geri döndürüyor.
 
-Daha sonra kuyruk ve inflight temizliği, sonraki komuta geçme, db durumu güncelleme gibi şeyler yapılır. 
+Burada cihazın `Acknowledged`, `Error` veya `NotNow` gibi durumlarla cevap verdiğini görüyorum.
+
+Son olarak; kuyruk ve `inFlight` temizliği, bir sonraki komuta geçilmesi, veritabanındaki komut durumunun güncellenmesi gibi işlemler gerçekleştiriliyor.
 
 
 ---
