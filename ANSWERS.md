@@ -748,12 +748,6 @@ redisTemplate.execute(RELEASE_LOCK_SCRIPT,
 - `redis.call('del', KEYS[1])` = Kilidi sil (sadece sahibi silebilir)
 - Sonuç: 1 (silindi) veya 0 (sahibi değilim)
 
-**Neden Lua Script gerekli?**
-- Redis'te GET + DEL iki işlem olmasaydı:
-  - Instance A: GET → "UUID-A" (benim kilidi)
-  - Instance B: SET → Override! (lock çalındı)
-  - Instance A: DEL (çalınan kilidi sildi)
-  - **ATOMICITY BOZULDU**
 
 #### Alternatif ve Değişiklik:
 
