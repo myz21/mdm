@@ -210,26 +210,6 @@ public void loadPendingCommandsFromDatabase() {
 }
 ```
 
-#### Alternatif ve Değişiklik:
-
-**Event Sourcing (Kafka/RabbitMQ):**
-- Daha modern ve asenkron yaklaşım
-- Dosya: [RedisAppleCommandQueueServiceImpl.java](src/main/java/com/arcyintel/arcops/apple_mdm/services/apple/command/RedisAppleCommandQueueServiceImpl.java#L280-L310)
-
-```java
-// Mevcut (Dual-write: DB + Redis):
-appleCommandRepository.save(appleCommand);  // DB'ye yaz
-String queueKey = QUEUE_KEY_PREFIX + udid;
-redisTemplate.opsForList().rightPush(queueKey, item);  // Redis'e yaz
-
-// Alternatif (Event-driven):
-// 1. appleCommandRepository.save(appleCommand);
-// 2. kafkaTemplate.send("apple-commands", appleCommand);
-// 3. KafkaListener, DB'den oku ve Redis'e yükle (asyen, daha güvenli)
-```
-
----
-
 ### a3) Projede kullanılan yapı: RedisAppleCommandQueueServiceImpl
 
 #### Detaylı Cevap:
