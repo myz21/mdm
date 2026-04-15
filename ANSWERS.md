@@ -1,5 +1,58 @@
 # Apple MDM Komut Sistemi - Detaylı Çözüm Analizi
 
+Sorular aşağıdadır ama öncelikle mevcut adımların kodu yapısını inceledim ve yorumum aşağıdadır.
+
+```
+İlk önce 1. ve 2. adımı okuduktan sonra burada bir API isteği olduğunu fark ettim. Sonra CONTEXT.md'de, cihazı kilitle yazıdınız için "lock" keyword'ünü arattım. Ve aşağıdaki endpoint'i buldum:
+
+```
+/devices/{udid}/commands/lock	
+```
+
+Daha sonra `commands/lock`'u codebase üzerinde aradım. Aşağıdaki koda ulaştım:
+
+```java
+    @Operation(summary = "Send DeviceLock Command")
+    @PostMapping("/{udid}/commands/lock")
+    public ResponseEntity<Map<String, Object>> lockDevice(@PathVariable String udid,
+                             @RequestParam(required = false) String message,
+                             @RequestParam(required = false) String phoneNumber) throws Exception {
+        appleCommandSenderService.lockDevice(udid, message, phoneNumber);
+        return ResponseEntity.ok(commandResponse("DeviceLock", udid));
+    }
+```
+
+Bu methoddan ilk anladığım, bunun mesaj ve telefon numarası alabileceği idi. Cihazı kiltleyen iç method yani lockDevice id, message, phoneNumber parametrelerini almakta. Bunlar da id request header üzerinden, telefon numarası ve mesaj da request body üzerinden gelmektedir. Dönüş olarak DeviceLock mesajı ile birlikte udid dönmektedir.
+
+AppleCommandService'in altındaki LockDevice'a gittim. Sonra appleDeviceRepository'deki findByUdid methodu cihazın id'sini alarak veri tabanına sorgu atmaktadır. Eğer ki sorgu sonucu boş ise böyle bir id sistemimizde kayıtlı değil demektir. Ve kilitleme işleminin iptal olduğuna dair log basılır. 
+
+Daha sonra cihazın id'si alınarak cihazı kilitlemeyi temsil eden random bir id createCommandUUID ile üretilir.
+
+Daha sonra bu komutun id'si, cihazın id'si, komutun template'i ve kilitleme komutu appleCommandQueueService'e (kuyruk) push edilir.
+
+Bu push'un bir interface'e bağlı olduğunu gördüm. Daha sonra pushCommand'ı codebase içerisinde incelediğimde RedisAppleCommandQueueServiceImpl'ya gittim. Daha sonra bunun üzerinde bir yorum satırı fark ettim.
+
+// NOTE: pushCommand must NOT be @Async — callers push multiple commands sequentially
+    // and rely on FIFO ordering. Making this async breaks deterministic queue order.
+
+Burada bu methodun asenkron olmaması gerektiğini çünkü asenkron olduğunda FIFO mantığının bozulabileceğinden dolayı böyle bir yorum satırı bırakıldığını anladım. 
+
+Bu methodda öncelikle komut depolama için bir XML'e dönüştürülüyor. Sonra komut database'e yazılıyor. Sonrasında redis kuyruğuna ekleniyor ama önce kuyruk boş mu diye bir kontrol ediliyor. Sonra eğer mevcutta herhangi bir komut kuyruk üzerinde koşmuyorsa ve kuyruğa ilk defa komut giriyorsa bu durumda device weak ediliyor. Eğer sendWakeUp FAIL olursa hata mesajı ID ile birlikte loglanıyor. Eğer ki başarılı şekilde pushlanıdysa ID ve komut IDsi loglanıyor. İlk üç adımı tamalamış oluyoruz.
+
+Sonrasında cihaz WAKE komutunu aldı ve artık 4. adımdayız. Burada cihaz /mdm/connect'e bağlanır. Bununla alakalı dosya `/home/neo/Desktop/GITHUB MYZ21/apple_mdm/src/main/java/com/arcyintel/arcops/apple_mdm/services/apple/command/AppleCommandSenderServiceImpl.java`'te görülebilir. 
+
+Gerekli validasyonlardan sonra popCommand ile sonraki komut pop edilir.
+
+Daha sonra toXMLPropertyList methodu ile XML'e çevirme işlemi gerçekleştirilerek cihazın anlayacağı formata çevrilir. Buradaki pop command EXECUTING için incelendiğinde öncelikle cihazın başka bir instance tarafından o an herhangi bir komutu işleyip işlemediği kontrol edilir. Eğer işleniyorsa işlem pas geçilir. inFlight durumu için ayrıca bir yorum satırı bırakıldığını da gördüm: `// If this device already has an in-flight command, do NOT issue another one`.
+
+Kuyruktan alınan komut `executeCommandAsync` ile çalıştırılır. Ayrıca bu işlemin gerçekleştirilmesi bir zaman harcayacağından dolayı bir TTL cache kullanılmıştır. Cihaz komutu çalıştırıldıkta sonra sonucu döner.
+
+Burada Acknowledged, Error veya NotNow şeklinde cevabı döndüğünü görüyorum.
+
+Daha sonra kuyruk ve inflight temizliği, sonraki komuta geçme, db durumu güncelleme gibi şeyler yapılır. 
+```
+
+
 ## a) Veri Yapısı Seçimi
 
 ---
